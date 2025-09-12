@@ -9,31 +9,52 @@ const checkPNR = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid PNR" });
     }
 
-    // RapidAPI PNR endpoint options
-    const options = {
+    // Step 1️⃣: Get PNR Status
+    const pnrOptions = {
       method: 'GET',
       url: `https://irctc-indian-railway-pnr-status.p.rapidapi.com/getPNRStatus/${pnr}`,
       headers: {
         'x-rapidapi-key': '33208efa56msh95c3093f3049a9ep11c5bejsn5fb66d942e0c',
         'x-rapidapi-host': 'irctc-indian-railway-pnr-status.p.rapidapi.com'
       },
-      timeout: 10000, // 10 seconds timeout
+      timeout: 10000
     };
 
-    // Make API request
-    const response = await axios.request(options);
+    const pnrResponse = await axios.request(pnrOptions);
 
-    // Send API response to client
+    const trainNumber = pnrResponse.data.data.trainNumber;
+
+    if (!trainNumber) {
+      return res.status(400).json({ success: false, message: "Train number not found in PNR data" });
+    }
+
+    // Step 2️⃣: Get Train Details by train number
+    const trainDetailsOptions = {
+      method: 'POST',
+      url: 'https://irctc-insight.p.rapidapi.com/api/v1/train-details',
+      headers: {
+        'x-rapidapi-key': '33208efa56msh95c3093f3049a9ep11c5bejsn5fb66d942e0c',
+        'x-rapidapi-host': 'irctc-insight.p.rapidapi.com',
+        'Content-Type': 'application/json'
+      },
+      data: { trainNo: trainNumber },
+      timeout: 10000
+    };
+
+    const trainDetailsResponse = await axios.request(trainDetailsOptions);
+
+    // ✅ Final Combined Response
     res.json({
       success: true,
-      data: response.data
+      pnrDetails: pnrResponse.data.data,
+      trainDetails: trainDetailsResponse.data
     });
 
   } catch (error) {
-    console.error("PNR API error:", error.response ? error.response.data : error.message);
+    console.error("Train Controller Error:", error.response ? error.response.data : error.message);
     res.status(500).json({
       success: false,
-      message: "Could not fetch PNR details",
+      message: "Could not fetch PNR and Train details",
       error: error.response ? error.response.data : error.message
     });
   }
