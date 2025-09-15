@@ -1,7 +1,11 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { generateOTP } = require('../utils/otpService');
+const { sendOtp } = require('../utils/otpSender');
+
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6-digit OTP
+};
 
 const signup = async (req, res) => {
     const { username, mobile, password, email } = req.body;
@@ -14,8 +18,7 @@ const signup = async (req, res) => {
         }
 
         const otp = generateOTP();
-        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
-
+        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins expiry
         const hashedPassword = await bcrypt.hash(password, 10);
 
         user = new User({
@@ -29,7 +32,7 @@ const signup = async (req, res) => {
 
         await user.save();
 
-        console.log(`OTP for ${mobile}: ${otp}`);  // Simulate sending OTP
+        await sendOtp(mobile, otp);  // Send OTP to mobile
 
         res.status(200).json({ message: 'OTP sent to your mobile number' });
     } catch (err) {
@@ -74,13 +77,21 @@ const login = async (req, res) => {
             user.otp = null;
             user.otpExpiry = null;
             await user.save();
-        } else {
-            if (!password) {
-                return res.status(400).json({ message: 'Password is required' });
-            }
-
+        } else if (password) {
             const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) return res.status(400).json({ message: 'Invalid password' });
+
+            // Generate OTP on successful password match for second-factor login
+            const newOtp = generateOTP();
+            user.otp = newOtp;
+            user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+            await user.save();
+
+            await sendOtp(mobile, newOtp);  // Send OTP for verification
+
+            return res.status(200).json({ message: 'OTP sent for verification' });
+        } else {
+            return res.status(400).json({ message: 'Provide either OTP or Password' });
         }
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
@@ -93,6 +104,7 @@ const login = async (req, res) => {
                 email: user.email
             }
         });
+
     } catch (err) {
         console.error('Login Error:', err.message);
         res.status(500).json({ message: 'Server error' });
