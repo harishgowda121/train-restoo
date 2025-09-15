@@ -8,6 +8,7 @@ const generateOTP = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();  // 6-digit OTP
 };
 
+// ---- Request OTP for Signup ----
 const requestOtp = async (req, res) => {
     const { username, mobile, password, email } = req.body;
 
@@ -42,16 +43,18 @@ const requestOtp = async (req, res) => {
         await tempUser.save();
         await sendOtp(mobile, otp);
 
-        res.status(200).json({
+        return res.status(200).json({
             status: 'success',
             message: 'OTP sent to your mobile number'
         });
+
     } catch (err) {
         console.error('Request OTP Error:', err.message);
-        res.status(500).json({ status: 'error', message: 'Server error' });
+        return res.status(500).json({ status: 'error', message: 'Server error' });
     }
 };
 
+// ---- Verify OTP for Signup ----
 const verifyOtp = async (req, res) => {
     const { mobile, otp } = req.body;
 
@@ -62,7 +65,6 @@ const verifyOtp = async (req, res) => {
             return res.status(400).json({ status: 'error', message: 'Invalid or expired OTP' });
         }
 
-        // Create real user now
         const user = new User({
             username: tempUser.username,
             mobile: tempUser.mobile,
@@ -71,11 +73,11 @@ const verifyOtp = async (req, res) => {
         });
 
         await user.save();
-        await OtpVerification.deleteOne({ mobile });  // Clean up temp data
+        await OtpVerification.deleteOne({ mobile });
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.status(200).json({
+        return res.status(200).json({
             status: 'success',
             message: 'OTP verified and account created successfully',
             token,
@@ -86,62 +88,87 @@ const verifyOtp = async (req, res) => {
                 email: user.email
             }
         });
+
     } catch (err) {
         console.error('Verify OTP Error:', err.message);
-        res.status(500).json({ status: 'error', message: 'Server error' });
+        return res.status(500).json({ status: 'error', message: 'Server error' });
     }
 };
 
+// ---- Login Flow ----
 const login = async (req, res) => {
-    const { mobile, password, otp } = req.body;
+    const { mobile, password } = req.body;
 
     try {
         const user = await User.findOne({ mobile });
-        if (!user) return res.status(400).json({ status: 'error', message: 'Invalid mobile' });
-
-        if (otp) {
-            if (user.otp !== otp || user.otpExpiry < new Date()) {
-                return res.status(400).json({ status: 'error', message: 'Invalid or expired OTP' });
-            }
-
-            user.otp = null;
-            user.otpExpiry = null;
-            await user.save();
-
-            const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-            return res.status(200).json({
-                status: 'success',
-                token,
-                user: {
-                    id: user._id,
-                    username: user.username,
-                    mobile: user.mobile,
-                    email: user.email
-                }
-            });
-        } else if (password) {
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch) return res.status(400).json({ status: 'error', message: 'Invalid password' });
-
-            const newOtp = generateOTP();
-            user.otp = newOtp;
-            user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-            await user.save();
-
-            await sendOtp(mobile, newOtp);
-
-            return res.status(200).json({
-                status: 'success',
-                message: 'OTP sent for verification'
-            });
-        } else {
-            return res.status(400).json({ status: 'error', message: 'Provide either OTP or Password' });
+        if (!user) {
+            return res.status(400).json({ status: 'error', message: 'Invalid mobile' });
         }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ status: 'error', message: 'Invalid password' });
+        }
+
+        const newOtp = generateOTP();
+        user.otp = newOtp.toString();
+        user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);  // 10 min expiry
+        await user.save();
+
+        await sendOtp(mobile, newOtp);
+
+        return res.status(200).json({
+            status: 'success',
+            message: 'OTP sent for verification'
+        });
+
     } catch (err) {
         console.error('Login Error:', err.message);
-        res.status(500).json({ status: 'error', message: 'Server error' });
+        return res.status(500).json({ status: 'error', message: 'Server error' });
     }
 };
 
-module.exports = { requestOtp, verifyOtp, login };
+// ---- Verify OTP for Login ----
+const verifyLoginOtp = async (req, res) => {
+    const { mobile, otp } = req.body;
+
+    try {
+        const user = await User.findOne({ mobile });
+
+        if (!user || !user.otp || !user.otpExpiry) {
+            return res.status(400).json({ status: 'error', message: 'No OTP requested or OTP expired' });
+        }
+
+        if (user.otpExpiry < new Date()) {
+            return res.status(400).json({ status: 'error', message: 'OTP expired' });
+        }
+
+        if (user.otp !== otp) {
+            return res.status(400).json({ status: 'error', message: 'Invalid OTP' });
+        }
+
+        // Clear OTP after successful verification
+        user.otp = null;
+        user.otpExpiry = null;
+        await user.save();
+
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        return res.status(200).json({
+            status: 'success',
+            token,
+            user: {
+                id: user._id,
+                username: user.username,
+                mobile: user.mobile,
+                email: user.email
+            }
+        });
+
+    } catch (err) {
+        console.error('Verify Login OTP Error:', err.message);
+        return res.status(500).json({ status: 'error', message: 'Server error' });
+    }
+};
+
+module.exports = { requestOtp, verifyOtp, login, verifyLoginOtp };
