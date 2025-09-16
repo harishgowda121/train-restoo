@@ -10,7 +10,7 @@ const generateOTP = () => {
 
 // ---- Request OTP for Signup ----
 const requestOtp = async (req, res) => {
-    const { username, mobile, password, email } = req.body;
+    const { username, mobile, password, email, role } = req.body;
 
     try {
         const existingUser = await User.findOne({ mobile });
@@ -27,6 +27,7 @@ const requestOtp = async (req, res) => {
             tempUser.username = username;
             tempUser.password = hashedPassword;
             tempUser.email = email || null;
+            tempUser.role = role || 'user';  // Store provided role or default
             tempUser.otp = otp;
             tempUser.otpExpiry = otpExpiry;
         } else {
@@ -35,6 +36,7 @@ const requestOtp = async (req, res) => {
                 mobile,
                 password: hashedPassword,
                 email: email || null,
+                role: role || 'user',
                 otp,
                 otpExpiry
             });
@@ -69,7 +71,8 @@ const verifyOtp = async (req, res) => {
             username: tempUser.username,
             mobile: tempUser.mobile,
             password: tempUser.password,
-            email: tempUser.email
+            email: tempUser.email,
+            role: tempUser.role  // Save the role in permanent user data
         });
 
         await user.save();
@@ -85,7 +88,8 @@ const verifyOtp = async (req, res) => {
                 id: user._id,
                 username: user.username,
                 mobile: user.mobile,
-                email: user.email
+                email: user.email,
+                role: user.role
             }
         });
 
@@ -111,7 +115,7 @@ const login = async (req, res) => {
         }
 
         const newOtp = generateOTP();
-        user.otp = newOtp.toString();
+        user.otp = newOtp;
         user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);  // 10 min expiry
         await user.save();
 
@@ -147,7 +151,6 @@ const verifyLoginOtp = async (req, res) => {
             return res.status(400).json({ status: 'error', message: 'Invalid OTP' });
         }
 
-        // Clear OTP after successful verification
         user.otp = null;
         user.otpExpiry = null;
         await user.save();
@@ -161,7 +164,8 @@ const verifyLoginOtp = async (req, res) => {
                 id: user._id,
                 username: user.username,
                 mobile: user.mobile,
-                email: user.email
+                email: user.email,
+                role: user.role
             }
         });
 
