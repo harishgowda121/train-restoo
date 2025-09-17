@@ -1,5 +1,6 @@
 const Hotel = require('../models/Hotel');
 
+// Add Hotel (Already Provided)
 const addHotel = async (req, res) => {
     try {
         const { name, image_url, description, stations, owner_id, menu } = req.body;
@@ -31,4 +32,32 @@ const addHotel = async (req, res) => {
     }
 };
 
-module.exports = { addHotel };
+// ✅ Get Hotels by Station(s)
+const getHotelsByStations = async (req, res) => {
+    try {
+        const { stations } = req.query;
+
+        if (!stations) {
+            return res.status(400).json({ status: 'error', message: 'Stations query param is required' });
+        }
+
+        // Parse stations query into array (comma-separated)
+        const stationsArray = stations.split(',').map(st => st.trim());
+
+        const hotels = await Hotel.find({
+            stations: { $in: stationsArray }
+        });
+
+        return res.status(200).json({
+            status: 'success',
+            count: hotels.length,
+            hotels
+        });
+
+    } catch (err) {
+        console.error('Get Hotels Error:', err.message);
+        return res.status(500).json({ status: 'error', message: 'Server error' });
+    }
+};
+
+module.exports = { addHotel, getHotelsByStations };
