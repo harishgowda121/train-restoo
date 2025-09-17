@@ -14,7 +14,7 @@ const checkPNR = async (req, res) => {
       method: 'GET',
       url: `https://irctc-indian-railway-pnr-status.p.rapidapi.com/getPNRStatus/${pnr}`,
       headers: {
-        'x-rapidapi-key': '33208efa56msh95c3093f3049a9ep11c5bejsn5fb66d942e0c',
+        'x-rapidapi-key': '4989091336msh549f62a2797138cp1daa11jsnfdbec87d28e7',
         'x-rapidapi-host': 'irctc-indian-railway-pnr-status.p.rapidapi.com'
       },
       timeout: 10000
@@ -61,3 +61,4 @@ const checkPNR = async (req, res) => {
 };
 
 module.exports = { checkPNR };
+
