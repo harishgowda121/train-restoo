@@ -33,7 +33,7 @@ const checkPNR = async (req, res) => {
       method: 'POST',
       url: 'https://irctc-insight.p.rapidapi.com/api/v1/train-details',
       headers: {
-        'x-rapidapi-key': '33208efa56msh95c3093f3049a9ep11c5bejsn5fb66d942e0c',
+        'x-rapidapi-key': '4989091336msh549f62a2797138cp1daa11jsnfdbec87d28e7',
         'x-rapidapi-host': 'irctc-insight.p.rapidapi.com',
         'Content-Type': 'application/json'
       },
@@ -61,4 +61,5 @@ const checkPNR = async (req, res) => {
 };
 
 module.exports = { checkPNR };
+
 
