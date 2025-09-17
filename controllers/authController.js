@@ -116,7 +116,7 @@ const login = async (req, res) => {
 
         const newOtp = generateOTP();
         user.otp = newOtp;
-        user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);  // 10 min expiry
+        user.otpExpiry = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);  // 10 days expiry
         await user.save();
 
         await sendOtp(mobile, newOtp);
@@ -176,3 +176,4 @@ const verifyLoginOtp = async (req, res) => {
 };
 
 module.exports = { requestOtp, verifyOtp, login, verifyLoginOtp };
+
