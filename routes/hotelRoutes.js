@@ -1,9 +1,9 @@
 const express = require('express');
-const { addHotel } = require('../controllers/hotelController');
+const { addHotel, getHotelsByStations } = require('../controllers/hotelController');
 
 const router = express.Router();
 
-// POST /api/hotels
-router.post('/', addHotel);
+router.post('/add-hotel', addHotel);
+router.get('/hotels', getHotelsByStations);  // GET with stations query param
 
 module.exports = router;
