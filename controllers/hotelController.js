@@ -12,12 +12,12 @@ const addHotel = async (req, res) => {
         const newHotel = new Hotel({
             name,
             description,
-            stations,
+            stations: Array.isArray(stations) ? stations : stations.split(',').map(s => s.trim()),
             owner_id,
-            logo: req.files?.logo?.[0]?.path,
-            background_image: req.files?.background_image?.[0]?.path,
-            gst_license: req.files?.gst_license?.[0]?.path,
-            fssai_license: req.files?.fssai_license?.[0]?.path
+            logo: req.files?.logo ? req.files.logo[0].path : null,
+            background_image: req.files?.background_image ? req.files.background_image[0].path : null,
+            gst_license: req.files?.gst_license ? req.files.gst_license[0].path : null,
+            fssai_license: req.files?.fssai_license ? req.files.fssai_license[0].path : null
         });
 
         await newHotel.save();
