@@ -122,8 +122,10 @@ const getHotelsByStations = async (req, res) => {
 
         const stationsArray = stations.split(',').map(st => st.trim());
 
-        const hotels = await Hotel.find({ stations: { $in: stationsArray }, verified: true });
-
+         const hotels = await Hotel.find({
+            stations: { $elemMatch: { $regex: stationsArray.join("|"), $options: "i" } },
+            verified: true
+        });
         res.status(200).json({
             status: 'success',
             count: hotels.length,
@@ -142,3 +144,4 @@ module.exports = {
     toggleKitchen,
     getHotelsByStations
 };
+
