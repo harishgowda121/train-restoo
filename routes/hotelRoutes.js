@@ -5,7 +5,10 @@ const {
     verifyHotel,
     addMenuItem,
     toggleKitchen,
-    getHotelsByStations
+    getHotelsByStations,
+    getAllVerifiedHotels,
+    getAllHotels,
+    getHotelsByOwner // ✅ NEW controller
 } = require('../controllers/hotelController');
 const { upload } = require('../config/cloudinary');
 
@@ -32,5 +35,14 @@ router.patch('/:hotelId/kitchen', toggleKitchen);
 
 // ✅ Get hotels by stations (user search)
 router.get('/stations', getHotelsByStations);
+
+// ✅ Get all verified hotels
+router.get('/verified', getAllVerifiedHotels);
+
+// ✅ Get all hotels (verified + unverified)
+router.get('/all', getAllHotels);
+
+// ✅ Get hotels by owner ID
+router.get('/owner/:ownerId', getHotelsByOwner);
 
 module.exports = router;
