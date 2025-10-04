@@ -122,10 +122,11 @@ const getHotelsByStations = async (req, res) => {
 
         const stationsArray = stations.split(',').map(st => st.trim());
 
-         const hotels = await Hotel.find({
-            stations: { $elemMatch: { $regex: stationsArray.join("|"), $options: "i" } },
+        const hotels = await Hotel.find({
+            stations: { $in: stationsArray },
             verified: true
         });
+
         res.status(200).json({
             status: 'success',
             count: hotels.length,
@@ -137,11 +138,67 @@ const getHotelsByStations = async (req, res) => {
     }
 };
 
+// ✅ Get All Verified Hotels
+const getAllVerifiedHotels = async (req, res) => {
+    try {
+        const hotels = await Hotel.find({ verified: true });
+
+        res.status(200).json({
+            status: 'success',
+            count: hotels.length,
+            hotels
+        });
+    } catch (err) {
+        console.error('Get All Verified Hotels Error:', err.message);
+        res.status(500).json({ status: 'error', message: 'Server error' });
+    }
+};
+
+// ✅ Get All Hotels (Verified + Unverified)
+const getAllHotels = async (req, res) => {
+    try {
+        const hotels = await Hotel.find();
+
+        res.status(200).json({
+            status: 'success',
+            count: hotels.length,
+            hotels
+        });
+    } catch (err) {
+        console.error('Get All Hotels Error:', err.message);
+        res.status(500).json({ status: 'error', message: 'Server error' });
+    }
+};
+
+// ✅ Get Hotels by Owner ID
+const getHotelsByOwner = async (req, res) => {
+    try {
+        const { ownerId } = req.params;
+
+        const hotels = await Hotel.find({ owner_id: ownerId });
+
+        if (!hotels || hotels.length === 0) {
+            return res.status(404).json({ status: 'error', message: 'No hotels found for this owner' });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            count: hotels.length,
+            hotels
+        });
+    } catch (err) {
+        console.error('Get Hotels By Owner Error:', err.message);
+        res.status(500).json({ status: 'error', message: 'Server error' });
+    }
+};
+
 module.exports = {
     addHotel,
     verifyHotel,
     addMenuItem,
     toggleKitchen,
-    getHotelsByStations
+    getHotelsByStations,
+    getAllVerifiedHotels,
+    getAllHotels,
+    getHotelsByOwner // ✅ export new controller
 };
-
