@@ -2,35 +2,54 @@ const Hotel = require('../models/Hotel');
 
 // ✅ Add Hotel (Owner submits hotel, stays unverified until admin approves)
 const addHotel = async (req, res) => {
-    try {
-        const { name, description, stations, owner_id } = req.body;
+  try {
+    const { name, description, stations, owner_id } = req.body;
 
-        if (!name || !stations || !owner_id) {
-            return res.status(400).json({ status: 'error', message: 'Required fields missing' });
-        }
-
-        const newHotel = new Hotel({
-            name,
-            description,
-            stations: Array.isArray(stations) ? stations : stations.split(',').map(s => s.trim()),
-            owner_id,
-            logo: req.files?.logo ? req.files.logo[0].path : null,
-            background_image: req.files?.background_image ? req.files.background_image[0].path : null,
-            gst_license: req.files?.gst_license ? req.files.gst_license[0].path : null,
-            fssai_license: req.files?.fssai_license ? req.files.fssai_license[0].path : null
-        });
-
-        await newHotel.save();
-
-        res.status(201).json({
-            status: 'success',
-            message: 'Hotel submitted successfully. Waiting for verification.',
-            hotel: newHotel
-        });
-    } catch (err) {
-        console.error('Add Hotel Error:', err.message);
-        res.status(500).json({ status: 'error', message: 'Server error' });
+    if (!name || !stations || !owner_id) {
+      return res
+        .status(400)
+        .json({ status: 'error', message: 'Required fields missing' });
     }
+
+    // --- Check if the user already has a hotel ---
+    const existingHotel = await Hotel.findOne({ owner_id });
+    if (existingHotel) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'You can submit only one hotel.',
+        hotel: existingHotel,
+      });
+    }
+
+    // --- Create new hotel ---
+    const newHotel = new Hotel({
+      name,
+      description,
+      stations: Array.isArray(stations)
+        ? stations
+        : stations.split(',').map((s) => s.trim()),
+      owner_id,
+      logo: req.files?.logo ? req.files.logo[0].path : null,
+      background_image: req.files?.background_image
+        ? req.files.background_image[0].path
+        : null,
+      gst_license: req.files?.gst_license ? req.files.gst_license[0].path : null,
+      fssai_license: req.files?.fssai_license
+        ? req.files.fssai_license[0].path
+        : null,
+    });
+
+    await newHotel.save();
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Hotel submitted successfully. Waiting for verification.',
+      hotel: newHotel,
+    });
+  } catch (err) {
+    console.error('Add Hotel Error:', err.message);
+    res.status(500).json({ status: 'error', message: 'Server error' });
+  }
 };
 
 // ✅ Verify Hotel (Admin only)
@@ -202,3 +221,4 @@ module.exports = {
     getAllHotels,
     getHotelsByOwner // ✅ export new controller
 };
+
