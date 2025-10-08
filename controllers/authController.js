@@ -22,14 +22,13 @@ const loginOrSignup = async (req, res) => {
       });
       await user.save();
 
-      // Inform that account was created
       console.log('New user created:', user.mobile);
     }
 
     // Generate OTP
     const otp = generateOTP();
     user.otp = otp;
-    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 mins expiry
     await user.save();
 
     // Send OTP via SMS
@@ -37,7 +36,7 @@ const loginOrSignup = async (req, res) => {
 
     return res.status(200).json({
       status: 'success',
-      message: user.isNew ? 'Account created. OTP sent.' : 'OTP sent.',
+      message: 'OTP sent successfully',
     });
 
   } catch (err) {
@@ -88,4 +87,81 @@ const verifyLoginOtp = async (req, res) => {
   }
 };
 
-module.exports = { loginOrSignup, verifyLoginOtp };
+// ---- Get All Users ----
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-otp -otpExpiry -__v'); // exclude sensitive fields
+    return res.status(200).json({
+      status: 'success',
+      count: users.length,
+      users,
+    });
+  } catch (err) {
+    console.error('GetAllUsers Error:', err.message);
+    return res.status(500).json({ status: 'error', message: 'Server error' });
+  }
+};
+
+// ---- Update User ----
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { mobile, role } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    if (mobile) user.mobile = mobile;
+    if (role) user.role = role;
+
+    await user.save();
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'User updated successfully',
+      user: {
+        id: user._id,
+        mobile: user.mobile,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error('UpdateUser Error:', err.message);
+    return res.status(500).json({ status: 'error', message: 'Server error' });
+  }
+};
+
+// ---- Delete User ----
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByIdAndDelete(id);
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'User deleted successfully',
+      deletedUser: {
+        id: user._id,
+        mobile: user.mobile,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error('DeleteUser Error:', err.message);
+    return res.status(500).json({ status: 'error', message: 'Server error' });
+  }
+};
+
+module.exports = {
+  loginOrSignup,
+  verifyLoginOtp,
+  getAllUsers,
+  updateUser,
+  deleteUser
+};
