@@ -28,8 +28,11 @@ router.post(
 router.put('/verify/:hotelId', verifyHotel);
 
 // ✅ Add menu item (only if verified)
-router.post('/:hotelId/menu', addMenuItem);
-
+router.post(
+    '/:hotelId/menu',
+    upload.single('image'),   // accept one image file for menu item
+    addMenuItem
+  );
 // ✅ Toggle kitchen (open/close)
 router.patch('/:hotelId/kitchen', toggleKitchen);
 
