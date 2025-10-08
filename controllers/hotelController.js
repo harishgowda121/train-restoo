@@ -80,34 +80,44 @@ const verifyHotel = async (req, res) => {
 // ✅ Add Menu Item (Only if verified)
 const addMenuItem = async (req, res) => {
     try {
-        const { hotelId } = req.params;
-        const { name, price, description, available } = req.body;
-
-        // Find the hotel by ID
-        const hotel = await Hotel.findById(hotelId);
-        if (!hotel) {
-            return res.status(404).json({ status: 'error', message: 'Hotel not found' });
-        }
-
-        // Check if the hotel is verified
-        if (!hotel.verified) {
-            return res.status(403).json({ status: 'error', message: 'Hotel not verified yet' });
-        }
-
-        // Add new menu item
-        hotel.menu.push({ name, price, description, available });
-        await hotel.save();
-
-        res.status(201).json({
-            status: 'success',
-            message: 'Menu item added successfully',
-            menu: hotel.menu
-        });
+      const { hotelId } = req.params;
+      const { name, price, description, available } = req.body;
+  
+      // Find the hotel
+      const hotel = await Hotel.findById(hotelId);
+      if (!hotel) {
+        return res.status(404).json({ status: 'error', message: 'Hotel not found' });
+      }
+  
+      // Check verification
+      if (!hotel.verified) {
+        return res.status(403).json({ status: 'error', message: 'Hotel not verified yet' });
+      }
+  
+      // ✅ Get Cloudinary image URL
+      const image_url = req.file ? req.file.path : null;
+  
+      // Add new menu item
+      hotel.menu.push({
+        name,
+        price,
+        description,
+        available,
+        image_url, // store uploaded image
+      });
+  
+      await hotel.save();
+  
+      res.status(201).json({
+        status: 'success',
+        message: 'Menu item added successfully',
+        menu: hotel.menu,
+      });
     } catch (err) {
-        console.error('Add Menu Error:', err.message);
-        res.status(500).json({ status: 'error', message: 'Server error' });
+      console.error('Add Menu Error:', err.message);
+      res.status(500).json({ status: 'error', message: 'Server error' });
     }
-};
+  };
 
 // ✅ Toggle Kitchen Open/Close
 const toggleKitchen = async (req, res) => {
