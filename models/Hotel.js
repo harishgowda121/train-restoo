@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
 
 const MenuSchema = new mongoose.Schema({
-    name: { type: String, required: true },          // changed from item_name → name
+    name: { type: String, required: true },          
     price: { type: Number, required: true },
     description: { type: String },
-    available: { type: Boolean, default: true },     // added new field
-    image_url: { type: String }                      // optional image URL if needed later
+    quantity: { type: String },
+    available: { type: Boolean, default: true },     
+    image_url: { type: String }                     
 });
 
 const HotelSchema = new mongoose.Schema({
