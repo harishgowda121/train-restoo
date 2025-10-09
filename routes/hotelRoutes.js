@@ -8,7 +8,9 @@ const {
     getHotelsByStations,
     getAllVerifiedHotels,
     getAllHotels,
-    getHotelsByOwner // ✅ NEW controller
+    getHotelsByOwner, 
+    editMenuItem 
+
 } = require('../controllers/hotelController');
 const { upload } = require('../config/cloudinary');
 
@@ -47,5 +49,8 @@ router.get('/all', getAllHotels);
 
 // ✅ Get hotels by owner ID
 router.get('/owner/:ownerId', getHotelsByOwner);
+
+// ✅ Edit Menu Item
+router.put('/menu/:hotelId/:itemId', upload.single('image_url'), editMenuItem);
 
 module.exports = router;
