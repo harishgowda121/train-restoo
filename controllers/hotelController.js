@@ -81,7 +81,7 @@ const verifyHotel = async (req, res) => {
 const addMenuItem = async (req, res) => {
     try {
       const { hotelId } = req.params;
-      const { name, price, description, available } = req.body;
+      const { name, price, description,quantity, available } = req.body;
   
       // Find the hotel
       const hotel = await Hotel.findById(hotelId);
@@ -101,6 +101,7 @@ const addMenuItem = async (req, res) => {
       hotel.menu.push({
         name,
         price,
+        quantity,
         description,
         available,
         image_url, // store uploaded image
