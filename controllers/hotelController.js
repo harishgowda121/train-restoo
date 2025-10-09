@@ -228,6 +228,54 @@ const getHotelsByOwner = async (req, res) => {
     }
 };
 
+// ✅ Edit Menu Item
+const editMenuItem = async (req, res) => {
+  try {
+    const { hotelId, itemId } = req.params;
+    const { name, price, description, quantity, available } = req.body;
+
+    // Find the hotel
+    const hotel = await Hotel.findById(hotelId);
+    if (!hotel) {
+      return res.status(404).json({ status: 'error', message: 'Hotel not found' });
+    }
+
+    // Check verification
+    if (!hotel.verified) {
+      return res.status(403).json({ status: 'error', message: 'Hotel not verified yet' });
+    }
+
+    // Find menu item by ID
+    const menuItem = hotel.menu.id(itemId);
+    if (!menuItem) {
+      return res.status(404).json({ status: 'error', message: 'Menu item not found' });
+    }
+
+    // Update fields if provided
+    if (name) menuItem.name = name;
+    if (price) menuItem.price = price;
+    if (description) menuItem.description = description;
+    if (quantity) menuItem.quantity = quantity;
+    if (available !== undefined) menuItem.available = available;
+
+    // ✅ Update image if uploaded
+    if (req.file) {
+      menuItem.image_url = req.file.path;
+    }
+
+    await hotel.save();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Menu item updated successfully',
+      menuItem,
+    });
+  } catch (err) {
+    console.error('Edit Menu Error:', err.message);
+    res.status(500).json({ status: 'error', message: 'Server error' });
+  }
+};
+
 module.exports = {
     addHotel,
     verifyHotel,
@@ -236,5 +284,6 @@ module.exports = {
     getHotelsByStations,
     getAllVerifiedHotels,
     getAllHotels,
-    getHotelsByOwner // ✅ export new controller
+    getHotelsByOwner,
+    editMenuItem 
 };
